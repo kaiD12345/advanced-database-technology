@@ -1,0 +1,264 @@
+--CREATE USER HEALTHNET IDENTIFIED BY "12345";
+--GRANT CONNECT, RESOURCE TO HEALTHNET;
+--alter USER HEALTHNET QUOTA UNLIMITED ON USERS;(GRANT FOR INSERT)
+
+--Q1.CREATING DATABASE AND TABLE
+ALTER SESSION SET CURRENT_SCHEMA = HEALTHNETCREATE 
+CREATE TABLE PATIENT (
+  ID NUMBER PRIMARY KEY,
+  NAME VARCHAR2(100) NOT NULL
+);
+--CRAETING PATIENT MED
+CREATE TABLE PATIENT_MED (
+  PATIENT_MED_ID NUMBER PRIMARY KEY,
+  PATIENT_ID NUMBER NOT NULL REFERENCES PATIENT(ID),
+  MED_NAME VARCHAR2(80) NOT NULL,
+  DOSE_MG NUMBER(6,2) CHECK (DOSE_MG >= 0),
+  START_DT DATE,
+  END_DT   DATE,
+  CONSTRAINT CK_RX_DATES CHECK (
+    START_DT IS NULL OR END_DT IS NULL OR START_DT <= END_DT
+  )
+);
+--inserting int patient
+INSERT INTO PATIENT VALUES (1,'KELLIA');
+INSERT INTO PATIENT VALUES (2,'BETTY');
+INSERT INTO PATIENT VALUES (3,'KAILA');
+INSERT INTO PATIENT VALUES (4,'ELAN');
+INSERT INTO PATIENT VALUES (5,'YVAN');
+select * from patient
+---Negative dose (violates CHECK (DOSE_MG >= 0))
+INSERT INTO PATIENT_MED VALUES (
+  101, 1, 'Amoxicillin', -250, DATE '2025-10-01', DATE '2025-10-10'
+);
+-- ORA-02290: check constraint (HEALTHNET.SYS_C...) violated
+--IT IS VIOLATED BECAUSE You're trying to insert -250,
+-- which violates the rule that DOSE_MG must be greater than or equal to zero.
+---Inverted dates (violates CK_RX_DATES)
+INSERT INTO PATIENT_MED VALUES (
+  102, 1, 'Ibuprofen', 200, DATE '2025-11-10', DATE '2025-11-01'
+);
+-- ORA-02290: check constraint (HEALTHNET.CK_RX_DATES) violated
+This tells us that the row you're trying to insert violates the CHECK condition:
+START_DT = 2025-11-10
+
+END_DT = 2025-11-01
+
+Since both dates are NOT NULL and START_DT > END_DT, the constraint fails.
+---Valid prescription with all fields
+INSERT INTO PATIENT_MED VALUES (
+  103, 1, 'Paracetamol', 500, DATE '2025-10-01', DATE '2025-10-05'
+);
+---Valid prescription with END_DT as NULL
+INSERT INTO PATIENT_MED VALUES (
+  104, 2, 'Ciprofloxacin', 250, DATE '2025-10-10', NULL
+);
+Q2.1: Prerequisite Tables
+CREATE TABLE BILL (
+  ID NUMBER PRIMARY KEY,
+  TOTAL NUMBER(12,2)
+);
+
+CREATE TABLE BILL_ITEM (
+  BILL_ID NUMBER,
+  AMOUNT NUMBER(12,2),
+  UPDATED_AT DATE,
+  CONSTRAINT FK_BILL_ITEM_BILL FOREIGN KEY (BILL_ID) REFERENCES BILL(ID)
+);
+
+CREATE TABLE BILL_AUDIT (
+  BILL_ID NUMBER,
+  OLD_TOTAL NUMBER(12,2),
+  NEW_TOTAL NUMBER(12,2),
+  CHANGED_AT DATE
+);
+--2: Correct Compound Trigger
+CREATE OR REPLACE TRIGGER TRG_BILL_TOTAL_CMP
+FOR INSERT OR UPDATE OR DELETE ON BILL_ITEM
+COMPOUND TRIGGER
+
+  -- Local collection of affected BILL_IDs
+  TYPE bill_id_tab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+  affected_bills bill_id_tab;
+  idx INTEGER := 0;
+
+  -- BEFORE EACH ROW: collect BILL_IDs
+  BEFORE EACH ROW IS
+  BEGIN
+    IF INSERTING OR UPDATING THEN
+      idx := idx + 1;
+      affected_bills(idx) := :NEW.BILL_ID;
+    ELSIF DELETING THEN
+      idx := idx + 1;
+      affected_bills(idx) := :OLD.BILL_ID;
+    END IF;
+  END BEFORE EACH ROW;
+
+  -- AFTER STATEMENT: recompute totals and insert audit rows
+  AFTER STATEMENT IS
+  BEGIN
+    FOR i IN affected_bills.FIRST .. affected_bills.LAST LOOP
+      DECLARE
+        v_bill_id BILL.ID%TYPE := affected_bills(i);
+        v_old_total BILL.TOTAL%TYPE;
+        v_new_total BILL.TOTAL%TYPE;
+      BEGIN
+        SELECT NVL(TOTAL, 0) INTO v_old_total FROM BILL WHERE ID = v_bill_id;
+
+        SELECT NVL(SUM(AMOUNT), 0) INTO v_new_total
+        FROM BILL_ITEM WHERE BILL_ID = v_bill_id;
+
+        UPDATE BILL SET TOTAL = v_new_total WHERE ID = v_bill_id;
+
+        INSERT INTO BILL_AUDIT (BILL_ID, OLD_TOTAL, NEW_TOTAL, CHANGED_AT)
+        VALUES (v_bill_id, v_old_total, v_new_total, SYSDATE);
+      END;
+    END LOOP;
+  END AFTER STATEMENT;
+
+END TRG_BILL_TOTAL_CMP;
+/
+3: Mixed-DML Test Script
+-- Insert a bill
+INSERT INTO BILL VALUES (1, 0);
+
+-- Insert items
+INSERT INTO BILL_ITEM VALUES (1, 100, SYSDATE);
+INSERT INTO BILL_ITEM VALUES (1, 200, SYSDATE);
+
+-- Update an item
+UPDATE BILL_ITEM SET AMOUNT = 150 WHERE BILL_ID = 1 AND AMOUNT = 100;
+
+-- Delete an item
+DELETE FROM BILL_ITEM WHERE BILL_ID = 1 AND AMOUNT = 200;
+
+-- Check results
+SELECT * FROM BILL;
+SELECT * FROM BILL_AUDIT;
+Q3.1: Create the Table and Demo Data
+CREATE TABLE STAFF_SUPERVISOR (
+  EMPLOYEE   VARCHAR2(50),
+  SUPERVISOR VARCHAR2(50)
+);
+
+-- Demo data (5 rows, includes a cycle)
+INSERT INTO STAFF_SUPERVISOR VALUES ('Alice', 'Bob');
+INSERT INTO STAFF_SUPERVISOR VALUES ('Bob', 'Carol');
+INSERT INTO STAFF_SUPERVISOR VALUES ('Carol', 'Diana');
+INSERT INTO STAFF_SUPERVISOR VALUES ('Eve', 'Bob');
+INSERT INTO STAFF_SUPERVISOR VALUES ('Diana', 'Alice'); -- cycle: Diana → Alice → Bob → Carol → Diana
+ SELECT * FROM STAFF_SUPERVISOR
+ --2: Corrected Recursive Query
+ WITH SUPERS (EMP, SUP, HOPS, PATH) AS (
+  -- Anchor: start with direct supervision, hop count = 1
+  SELECT EMPLOYEE, SUPERVISOR, 1, EMPLOYEE || '>' || SUPERVISOR
+  FROM STAFF_SUPERVISOR
+  UNION ALL
+  -- Recursive: climb up the supervision chain
+  SELECT S.EMPLOYEE, T.SUP, T.HOPS + 1, T.PATH || '>' || T.SUP
+  FROM STAFF_SUPERVISOR S
+  JOIN SUPERS T ON S.SUPERVISOR = T.EMP
+  WHERE INSTR(T.PATH, T.SUP) = 0 -- cycle guard
+)
+-- Final selection: top supervisor per employee
+SELECT EMP, SUP AS TOP_SUPERVISOR, HOPS
+FROM (
+  SELECT EMP, SUP, HOPS,
+         RANK() OVER (PARTITION BY EMP ORDER BY HOPS DESC) AS RANK
+  FROM SUPERS
+)
+WHERE RANK = 1;
+
+Q4.
+CREATE TABLE TRIPLE (
+  A VARCHAR2(100),
+  B VARCHAR2(50),
+  C VARCHAR2(100)
+);
+---Insert Sample Triples (8rows)
+-- Patient diagnoses
+INSERT INTO TRIPLE VALUES ('patient1', 'hasDiagnosis', 'Influenza');
+INSERT INTO TRIPLE VALUES ('patient2', 'hasDiagnosis', 'COVID19');
+INSERT INTO TRIPLE VALUES ('patient3', 'hasDiagnosis', 'Malaria');
+INSERT INTO TRIPLE VALUES ('patient4', 'hasDiagnosis', 'Diabetes');
+select * from TRIPLE
+-- Taxonomy edges
+INSERT INTO TRIPLE VALUES ('Influenza', 'isA', 'ViralInfection');
+INSERT INTO TRIPLE VALUES ('COVID19', 'isA', 'ViralInfection');
+INSERT INTO TRIPLE VALUES ('Malaria', 'isA', 'ParasiticInfection');
+INSERT INTO TRIPLE VALUES ('ViralInfection', 'isA', 'InfectiousDisease');
+INSERT INTO TRIPLE VALUES ('ParasiticInfection', 'isA', 'InfectiousDisease');
+INSERT INTO TRIPLE VALUES ('Diabetes', 'isA', 'ChronicDisease');
+select * from triple
+WITH ISA (CHILD, ANCESTOR) AS (
+  -- Direct isA relationships
+  SELECT C, A FROM TRIPLE WHERE B = 'isA'
+
+  UNION ALL
+
+  -- Recursive step: climb up the taxonomy
+  SELECT T.C, I.ANCESTOR
+  FROM TRIPLE T
+  JOIN ISA I ON T.B = 'isA' AND T.A = I.CHILD
+),
+
+INFECTIOUS_PATIENTS AS (
+  SELECT DISTINCT T.C
+  FROM TRIPLE T
+  JOIN ISA ON T.A = ISA.CHILD
+  WHERE T.B = 'hasDiagnosis'
+    AND ISA.ANCESTOR = 'InfectiousDisease'
+)
+SELECT A FROM TRIPLE;
+Q5.-- Create clinic table with spatial geometry
+CREATE TABLE CLINIC (
+  ID NUMBER PRIMARY KEY,
+  NAME VARCHAR2(100),
+  GEOM SDO_GEOMETRY
+);
+
+INSERT INTO USER_SDO_GEOM_METADATA
+  (TABLE_NAME, COLUMN_NAME, DIMINFO, SRID)
+VALUES (
+  'CLINIC',
+  'GEOM',
+  SDO_DIM_ARRAY(
+    SDO_DIM_ELEMENT('Longitude', 60.0, 61.0, 0.015),
+    SDO_DIM_ELEMENT('Latitude', -5.5, -4.5, 0.025)
+  ),
+  4326  --Use correct SRID for WGS84
+);
+
+COMMIT;
+-- Create spatial index
+CREATE INDEX CLINIC_SPX ON CLINIC(GEOM)
+INDEXTYPE IS MDSYS.SPATIAL_INDEX;
+
+SELECT C.ID, C.NAME
+FROM CLINIC C
+WHERE SDO_WITHIN_DISTANCE(
+  C.GEOM,
+  SDO_GEOMETRY(2001, 4326, SDO_POINT_TYPE(30.0600, -1.9570, NULL), NULL, NULL),
+  'distance=1 unit=KM'
+) = 'TRUE';
+--Nearest 3 clinics with computed distances
+SELECT C.ID, C.NAME,
+       SDO_GEOM.SDO_DISTANCE(
+         C.GEOM,
+         SDO_GEOMETRY(2001, 4326, SDO_POINT_TYPE(30.0600, -1.9570, NULL), NULL, NULL),
+         0.005,
+         'unit=KM'
+       ) AS KM
+FROM CLINIC C
+ORDER BY KM
+FETCH FIRST 3 ROWS ONLY;
+
+
+
+
+
+
+
+
+
+
