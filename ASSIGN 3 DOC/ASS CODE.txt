@@ -1,0 +1,448 @@
+Q1. CREATING TABLES OF BRANCH_A
+-- PRODUCT TABLE
+CREATE TABLE Product (
+  ProductID   NUMBER PRIMARY KEY,
+  ProductName VARCHAR2(100),
+  Category    VARCHAR2(50),
+  UnitPrice   NUMBER(10,2),
+  VolumeML    NUMBER,
+  Status      VARCHAR2(20)
+);
+  
+-- DISTRIBUTOR TABLE
+CREATE TABLE Distributor (
+  DistributorID NUMBER PRIMARY KEY,
+  Name          VARCHAR2(100),
+  Contact       VARCHAR2(50),
+  Region        VARCHAR2(50),
+  LicenseNo     VARCHAR2(30)
+);
+-- BATCH TABLE
+CREATE TABLE Batch (
+  BatchID         NUMBER PRIMARY KEY,
+  ProductID       NUMBER,
+  ProductionDate  DATE,
+  Quantity        NUMBER,
+  ExpiryDate      DATE,
+  FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
+);
+
+-- DELIVERY TABLE
+CREATE TABLE Delivery (
+  DeliveryID     NUMBER PRIMARY KEY,
+  BatchID        NUMBER,
+  DistributorID  NUMBER,
+  DateDelivered  DATE,
+  Quantity       NUMBER,
+  FOREIGN KEY (BatchID) REFERENCES Batch(BatchID),
+  FOREIGN KEY (DistributorID) REFERENCES Distributor(DistributorID)
+);
+
+-- INVOICE TABLE
+CREATE TABLE Invoice (
+  InvoiceID     NUMBER PRIMARY KEY,
+  DeliveryID    NUMBER,
+  TotalAmount   NUMBER(10,2),
+  DueDate       DATE,
+  Status        VARCHAR2(20),
+  FOREIGN KEY (DeliveryID) REFERENCES Delivery(DeliveryID)
+);
+
+-- PAYMENT TABLE
+CREATE TABLE Payment (
+  PaymentID    NUMBER PRIMARY KEY,
+  InvoiceID    NUMBER,
+  Amount       NUMBER(10,2),
+  PaymentDate  DATE,
+  Method       VARCHAR2(30),
+  FOREIGN KEY (InvoiceID) REFERENCES Invoice(InvoiceID)
+);
+
+
+--- CREATING TABLES OF BRANCH_B
+--PRODUCT_B TABLE
+CREATE TABLE Product (
+  ProductID   NUMBER PRIMARY KEY,
+  ProductName VARCHAR2(100),
+  Category    VARCHAR2(50),
+  UnitPrice   NUMBER(10,2),
+  VolumeML    NUMBER,
+  Status      VARCHAR2(20)
+);
+--BATCH_B TABLE
+CREATE TABLE Batch (
+  BatchID         NUMBER PRIMARY KEY,
+  ProductID       NUMBER FOREIGN KEY,
+  ProductionDate  DATE,
+  Quantity        NUMBER,
+  ExpiryDate      DATE
+);
+--DISTRIBUTOR_B TABLE
+CREATE TABLE Distributor (
+  DistributorID NUMBER PRIMARY KEY,
+  Name          VARCHAR2(100),
+  Contact       VARCHAR2(50),
+  Region        VARCHAR2(50),
+  LicenseNo     VARCHAR2(30)
+);
+--DELIVERY_B TABLE
+CREATE TABLE Delivery (
+  DeliveryID     NUMBER PRIMARY KEY,
+  BatchID        NUMBER FOREIGN KEY,
+  DistributorID  NUMBER FOREIGN KEY,
+  DateDelivered  DATE,
+  Quantity       NUMBER
+);
+--INVOICE_B TABLE
+CREATE TABLE Invoice (
+  InvoiceID     NUMBER PRIMARY KEY,
+  DeliveryID    NUMBER FOREIGN KEY,
+  TotalAmount   NUMBER(10,2),
+  DueDate       DATE,
+  Status        VARCHAR2(20)
+);
+--PAYMENT_B TABLE 
+CREATE TABLE Payment (
+  PaymentID    NUMBER PRIMARY KEY,
+  InvoiceID    NUMBER FOREIGN KEY,
+  Amount       NUMBER(10,2),
+  PaymentDate  DATE,
+  Method       VARCHAR2(30)
+);
+
+--INSERTING DATA IN BRANCH_A
+-- PRODUCT_A DATA
+INSERT INTO Product VALUES (101, 'Inyange Juice', 'Soft Drink', 500, 500, 'Active');
+INSERT INTO Product VALUES (102, 'Skol Lager', 'Alcoholic', 800, 330, 'Active');
+INSERT INTO Product VALUES (103, 'Mutzi Water', 'Water', 300, 1000, 'Active');
+INSERT INTO Product VALUES (104, 'Primus Beer', 'Alcoholic', 1000, 500, 'Discontinued');
+INSERT INTO Product VALUES (105, 'Vital Yogurt', 'Dairy', 700, 250, 'Active');
+select * from product
+--BATCH_A DATA
+--INSERT INTO Batch VALUES (201, 101, TO_DATE('2025-10-01', 'YYYY-MM-DD'), 1000, TO_DATE('2026-04-01', 'YYYY-MM-DD'));
+INSERT INTO Batch VALUES (202, 102, TO_DATE('2025-09-15', 'YYYY-MM-DD'), 800, TO_DATE('2026-03-15', 'YYYY-MM-DD'));
+INSERT INTO Batch VALUES (203, 103, TO_DATE('2025-10-10', 'YYYY-MM-DD'), 1200, TO_DATE('2026-05-10', 'YYYY-MM-DD'));
+INSERT INTO Batch VALUES (204, 104, TO_DATE('2025-08-20', 'YYYY-MM-DD'), 500, TO_DATE('2026-02-20', 'YYYY-MM-DD'));
+INSERT INTO Batch VALUES (205, 105, TO_DATE('2025-10-05', 'YYYY-MM-DD'), 950, TO_DATE('2026-04-05', 'YYYY-MM-DD'));
+select * from BATCH;
+--DISTRIBUTOR_A DATA
+--INSERT INTO Distributor VALUES (301, 'Kigali Beverages Ltd', '0788123456', 'Kigali', 'LIC-KGL-001');
+INSERT INTO Distributor VALUES (302, 'Musanze Drinks Co', '0788234567', 'Musanze', 'LIC-MUS-002');
+INSERT INTO Distributor VALUES (303, 'Rubavu Refreshments', '0788345678', 'Rubavu', 'LIC-RBV-003');
+INSERT INTO Distributor VALUES (304, 'Huye Hydration Hub', '0788456789', 'Huye', 'LIC-HUY-004');
+INSERT INTO Distributor VALUES (305, 'Rwamagana Bottlers', '0788567890', 'Rwamagana', 'LIC-RWA-005');
+SELECT * FROM Distributor;
+--DELIVERY_A DATA
+--INSERT INTO Delivery VALUES (401, 201, 301, TO_DATE('2025-10-15', 'YYYY-MM-DD'), 500);
+INSERT INTO Delivery VALUES (402, 202, 302, TO_DATE('2025-10-16', 'YYYY-MM-DD'), 400);
+INSERT INTO Delivery VALUES (403, 203, 303, TO_DATE('2025-10-17', 'YYYY-MM-DD'), 600);
+INSERT INTO Delivery VALUES (404, 204, 304, TO_DATE('2025-10-18', 'YYYY-MM-DD'), 300);
+INSERT INTO Delivery VALUES (405, 205, 305, TO_DATE('2025-10-19', 'YYYY-MM-DD'), 450);
+select * from delivery;
+--INVOICE_A DATA
+--INSERT INTO Invoice VALUES (501, 401, 250000, TO_DATE('2025-11-15', 'YYYY-MM-DD'), 'Unpaid');
+INSERT INTO Invoice VALUES (502, 402, 180000, TO_DATE('2025-11-16', 'YYYY-MM-DD'), 'Paid');
+INSERT INTO Invoice VALUES (503, 403, 300000, TO_DATE('2025-11-17', 'YYYY-MM-DD'), 'Unpaid');
+INSERT INTO Invoice VALUES (504, 404, 120000, TO_DATE('2025-11-18', 'YYYY-MM-DD'), 'Paid');
+INSERT INTO Invoice VALUES (505, 405, 225000, TO_DATE('2025-11-19', 'YYYY-MM-DD'), 'Overdue');
+SELECT * FROM invoice;
+--PAYMENT_A DATA
+--INSERT INTO Payment VALUES (601, 501, 250000, TO_DATE('2025-11-10', 'YYYY-MM-DD'), 'Mobile Money');
+INSERT INTO Payment VALUES (602, 502, 180000, TO_DATE('2025-11-11', 'YYYY-MM-DD'), 'Bank Transfer');
+INSERT INTO Payment VALUES (603, 503, 300000, TO_DATE('2025-11-12', 'YYYY-MM-DD'), 'Cash');
+INSERT INTO Payment VALUES (604, 504, 120000, TO_DATE('2025-11-13', 'YYYY-MM-DD'), 'Mobile Money');
+INSERT INTO Payment VALUES (605, 505, 225000, TO_DATE('2025-11-14', 'YYYY-MM-DD'), 'Bank Transfer');
+select * from payment;
+--INSERTING DATA IN BRANCH_B
+--INSERT INTO product_b VALUES (107, 'Inyange Juice', 'Soft Drink', 500, 500, 'Active');
+INSERT INTO product_b VALUES (108, 'Skol Lager', 'Alcoholic', 800, 330, 'Active');
+INSERT INTO product_b VALUES (109, 'Mutzi Water', 'Water', 300, 1000, 'Active');
+INSERT INTO product_b VALUES (110, 'Primus Beer', 'Alcoholic', 1000, 500, 'Discontinued');
+SELECT * FROM Product_b;
+--INSERT INTO BATCH_B (BatchID, ProductID, ProductionDate, Quantity, ExpiryDate)
+VALUES (111, 107, TO_DATE('2025-10-01', 'YYYY-MM-DD'), 500, TO_DATE('2026-04-01', 'YYYY-MM-DD'));
+
+INSERT INTO BATCH_B (BatchID, ProductID, ProductionDate, Quantity, ExpiryDate)
+VALUES (112, 108, TO_DATE('2025-10-10', 'YYYY-MM-DD'), 800, TO_DATE('2026-01-10', 'YYYY-MM-DD'));
+
+INSERT INTO BATCH_B (BatchID, ProductID, ProductionDate, Quantity, ExpiryDate)
+VALUES (113, 109, TO_DATE('2025-09-20', 'YYYY-MM-DD'), 300, TO_DATE('2026-03-20', 'YYYY-MM-DD'));
+
+INSERT INTO BATCH_B (BatchID, ProductID, ProductionDate, Quantity, ExpiryDate)
+VALUES (114, 110, TO_DATE('2025-08-15', 'YYYY-MM-DD'), 1000, TO_DATE('2025-12-15', 'YYYY-MM-DD'));
+select * from BATCH_B;
+--INSERT INTO distributor_b (DistributorID, Name, Contact, Region, LicenseNo)
+VALUES (201, 'Inyange Distributors Ltd', '0788123456', 'Kigali', 'LIC-RW-001');
+
+INSERT INTO distributor_b (DistributorID, Name, Contact, Region, LicenseNo)
+VALUES (202, 'Skol Distribution Co.', '0788456789', 'Northern', 'LIC-RW-002');
+
+INSERT INTO distributor_b (DistributorID, Name, Contact, Region, LicenseNo)
+VALUES (203, 'Mutzi Supply Chain', '0788567890', 'Eastern', 'LIC-RW-003');
+
+select * from Distributor_b;
+--INSERT INTO delivery_b (DeliveryID, BatchID, DistributorID, DateDelivered, Quantity)
+VALUES (401, 111, 201, TO_DATE('2025-10-05', 'YYYY-MM-DD'), 200);
+
+INSERT INTO Delivery_b(DeliveryID, BatchID, DistributorID, DateDelivered, Quantity)
+VALUES (402, 112, 202, TO_DATE('2025-10-12', 'YYYY-MM-DD'), 150);
+
+INSERT INTO delivery_b (DeliveryID, BatchID, DistributorID, DateDelivered, Quantity)
+VALUES (403, 113, 203, TO_DATE('2025-09-25', 'YYYY-MM-DD'), 100);
+
+SELECT * FROM delivery_b;
+
+--INSERT INTO Invoice_b (InvoiceID, DeliveryID, TotalAmount, DueDate, Status)
+VALUES (601, 401, 120000.00, TO_DATE('2025-11-05', 'YYYY-MM-DD'), 'Pending');
+
+INSERT INTO Invoice_b (InvoiceID, DeliveryID, TotalAmount, DueDate, Status)
+VALUES (602, 402, 95000.00, TO_DATE('2025-11-12', 'YYYY-MM-DD'), 'Paid');
+
+INSERT INTO Invoice_b (InvoiceID, DeliveryID, TotalAmount, DueDate, Status)
+VALUES (603, 403, 75000.00, TO_DATE('2025-10-30', 'YYYY-MM-DD'), 'Overdue');
+
+SELECT * FROM invoice_b;
+--INSERT INTO payment_b (PaymentID, InvoiceID, Amount, PaymentDate, Method)
+VALUES (701, 601, 120000.00, TO_DATE('2025-11-06', 'YYYY-MM-DD'), 'Mobile Money');
+
+INSERT INTO Payment_b (PaymentID, InvoiceID, Amount, PaymentDate, Method)
+VALUES (702, 602, 95000.00, TO_DATE('2025-11-13', 'YYYY-MM-DD'), 'Bank Transfer');
+
+INSERT INTO payment_b (PaymentID, InvoiceID, Amount, PaymentDate, Method)
+VALUES (703, 603, 75000.00, TO_DATE('2025-10-31', 'YYYY-MM-DD'), 'Cash');
+
+COMMIT;
+SELECT * FROM Payment_b;
+--Q2.Create and Use Database Links
+
+-- Connect as branch_a
+CREATE branch_b_link
+CONNECT TO branch_b_user IDENTIFIED BY "12345"
+USING 'XEPDB1';
+--connect as branch_b
+CREATE branch_a_link
+CONNECT TO branch_a_user IDENTIFIED BY "12345"
+USING 'XEPDB1';
+
+
+--REMOTE
+--SELECT ProductID, ProductName, UnitPrice
+FROM Product_B@branch_b_link
+WHERE UnitPrice > 100;
+--Distributed Join Between Local and Remote Tables
+SELECT InvoiceID,ProductID,ProductName, UnitPrice
+FROM Invoice
+JOIN Product_B@branch_b_link ON ProductID = ProductID
+WHERE UnitPrice > 100;
+--Q3 Enable Parallelism on the Table
+ALTER TABLE PRODUCT_B PARALLEL 8;
+--Serial Query (No Hint)
+EXPLAIN PLAN FOR
+SELECT COUNT(*) FROM PRODUCT_B WHERE UNITPRICE > 1000;
+--time set (no hint)
+SET TIMING ON
+SELECT COUNT(*) FROM PRODUCT_B WHERE UNITPRICE > 10000;
+SET TIMING OFF
+--3: Parallel Query (With Hint)
+EXPLAIN PLAN FOR
+SELECT /*+ PARALLEL(PRODUCT_B, 8) */ COUNT(*) FROM PRODUCT_B WHERE UNITPRICE > 10000;
+--time set(with hint)
+SET TIMING ON
+SELECT /*+ PARALLEL(PRODUCT_B, 8) */ COUNT(*) FROM PRODUCT_B WHERE UNITPRICE > 10000;
+SET TIMING OFF
+--q4.PL/SQL Block for Distributed Insert
+SET SERVEROUTPUT ON;
+
+BEGIN
+  -- Insert into local table (Invoice in branch_a)
+  INSERT INTO Invoice (InvoiceID, DeliveryID, TotalAmount, DueDate, Status)
+  VALUES (1001, 401, 15000.00, TO_DATE('25/12/2025', 'DD/MM/YYYY'), 'PENDING');
+
+  -- Insert into remote table (Product in branch_b via DB link)
+  INSERT INTO Product_b@branch_b_link (ProductID, ProductName, Category, UnitPrice, VolumeML, Status)
+  VALUES (501, 'Mineral Water', 'Beverage', 500.00, 1000, 'AVAILABLE');
+
+  -- Commit once — triggers Oracle’s two-phase commit
+  COMMIT;
+
+  DBMS_OUTPUT.PUT_LINE(' Both inserts committed successfully.');
+EXCEPTION
+  WHEN OTHERS THEN
+    ROLLBACK;
+    DBMS_OUTPUT.PUT_LINE(' Error: ' || SQLERRM);
+END;
+--Verifying Atomicity
+SELECT local_tran_id, global_tran_id, state, mixed, advice
+FROM dba_2pc_pending;
+--Q5.Begin a distributed transaction
+---- Local
+--SELECT ProductID FROM Product;
+
+-- Remote
+--SELECT ProductID FROM product_b@BRANCH_B_LINK;
+
+-- User S_BranchDB_A)
+-- 1. Insert into local node (Kigali) but with  no commit 
+INSERT INTO Product VALUES (400, 'Inyange Juice', 'Soft Drink', 300, 300, 'Active');
+-- 2. Insert into remote node (Other cities) but with no commit 
+INSERT INTO product_b@BRANCH_B_LINK(ProductID,ProductName,Category,UnitPrice,VolumeML,Status)
+VALUES (100, 'Skol Lager', 'Alcoholic', 800, 330, 'Active');
+---- Checking the failed transaction
+SELECT 
+    LOCAL_TRAN_ID, 
+    GLOBAL_TRAN_ID, 
+    STATE, 
+    FAIL_TIME
+FROM 
+    DBA_2PC_PENDING
+WHERE 
+    LOCAL_TRAN_ID IS NOT NULL 
+    AND LOCAL_TRAN_ID IN (SELECT DISTINCT LOCAL_TRAN_ID FROM DBA_2PC_PENDING);
+    --  recoverying and forcing the roll back to resolve the unresolved transaction
+-- In Session 2 (DBA user)
+ROLLBACK FORCE 'YOUR_LOCAL_TRAN_ID'; 
+--   verification of recovery and atomicity 
+-- In Session 2 (DBA user)
+SELECT * FROM DBA_2PC_PENDING;
+-
+--SELECT LOCAL_TRAN_ID, GLOBAL_TRAN_ID, STATE, FAIL_TIME
+FROM DBA_2PC_PENDING
+WHERE STATE = 'prepared';
+--SELECT LOCAL_TRAN_ID, GLOBAL_TRAN_ID, STATE, FAIL_TIME
+FROM DBA_2PC_PENDING;
+
+--Q6. DISTRIBUTED CONCURRENCY CONTROL
+-- This step is for cleanup duplicate that happened 
+DELETE FROM product_b@branch_b_link WHERE productID = 100;
+select * from product_b@branch_b_link 
+-- Re-insert the single, correct row
+INSERT INTO product_b@branch_b_link (ProductID, ProductName, Category, UnitPrice, VolumeML, Status)
+VALUES (1005, 'Skol Lager', 'Alcoholic', 12000, 250, 'Active');
+
+COMMIT;
+SELECT ProductID FROM product_b@branch_b_link;
+--Checking whether the remote record exist after deleting duplication
+SELECT * FROM product_b@branch_b_link WHERE productID = 1005;
+-- Update the remote record (ID 1005)
+
+UPDATE product_b@branch_b_link
+SET productName = 'Skol Lager (Locked by Session 1)'
+WHERE ProductID =1005;
+-- Attempt to update the same remote record (ID 1005) with different records
+UPDATE product_b@branch_b_link
+SET UnitPrice = '12000'
+WHERE productID =1005;
+--before running the above code i have to Connect as a DBA user or SYSTEM/SYS and run the following code  to check the conflict
+SELECT 
+    l.sid,
+    s.username,
+    l.type,
+    l.lmode,       -- Lock mode held
+    l.request,     -- Lock mode requested
+    l.block        -- 1 = blocking, 0 = not blocking
+FROM 
+    v$lock l
+JOIN 
+    v$session s ON l.sid = s.sid;
+    -- By resolving the lock confict , i have to commit after the above step
+
+COMMIT;
+Q7.PARALLEL DATA LOADING / ETL SIMULATION
+--Aggregating Product Revenue from a Large Table
+ALTER SESSION ENABLE PARALLEL DML;
+--Regular Insert (No Parallelism)
+INSERT INTO product_revenue_summary (ProductID, TotalQuantity, TotalRevenue)
+SELECT ProductID, SUM(VolumeML), SUM(VolumeML * UnitPrice)
+FROM product
+GROUP BY ProductID;
+--Parallel Insert with PARALLEL DML
+INSERT /*+ APPEND PARALLEL(p, 4) */
+INTO product_revenue_summary (ProductID, TotalQuantity, TotalRevenue)
+SELECT ProductID,
+       SUM(VolumeML),
+       SUM(VolumeML * UnitPrice)
+FROM product p
+GROUP BY ProductID;
+--CREATE TABLE Expense (
+  ExpenseID     NUMBER PRIMARY KEY,
+  ProjectID     NUMBER,
+  Description   VARCHAR2(200),
+  Cost          NUMBER(10,2),
+  DateIncurred  DATE
+);
+INSERT INTO Expense VALUES (1, 101, 'Transport', 5000, SYSDATE);
+INSERT INTO Expense VALUES (2, 102, 'Packaging', 3000, SYSDATE);
+COMMIT;
+
+--Create Expense_Staging Table from Expense
+CREATE TABLE Expense_Staging AS
+SELECT * FROM Expense WHERE 1=0;  -- Creates structure only
+INSERT /*+ PARALLEL(Expense, 4) */ INTO Expense
+SELECT /*+ PARALLEL(Expense_Staging, 4) */
+  ExpenseID + 1000,
+  ProjectID,
+  Description || ' [ETL]',
+  Cost * 1.05,
+  DateIncurred
+FROM Expense_Staging;
+--ALTER SESSION ENABLE PARALLEL DML;
+
+UPDATE /*+ PARALLEL(Expense, 4) */ Expense
+SET
+  Cost = ROUND(Cost * 1.08, 2),  -- Increase cost by 8%
+  Description = REPLACE(Description, '[ETL]', '[ETL v2]')  -- Tag with new version
+WHERE ExpenseID BETWEEN 1000 AND 1999;  -- Target previously inserted rows
+
+COMMIT;
+
+SET AUTOTRACE OFF;
+SET TIMING OFF;
+--Q8.ER DIAGRAM
+
+Q9.Distributed Query
+EXPLAIN PLAN FOR
+SELECT p.ProductName, SUM('d.TotalAmount') AS TotalCost
+FROM Product p
+JOIN Batch b ON p.ProductID = b.ProductID
+JOIN Delivery_b@branch_b_link i ON p.BatchID = i.batchID
+GROUP BY p.ProductName;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+--B. Optimization:theory 
+Q10.Performance Benchmark and Report
+CREATE MATERIALIZED VIEW mvb_delivery AS
+SELECT * FROM delivery_b@branch_b_link;
+
+CREATE MATERIALIZED VIEW mvb_product AS
+SELECT * FROM product_b@branch_b_link;
+--Centralized query:
+SET AUTOTRACE ON
+SELECT p.productid, SUM(e.Cost), COUNT(s.StaffID)
+FROM Project p
+JOIN mvb_expense e ON p.ProjectID = e.ProjectID
+JOIN mvb_staff s ON p.ProjectID = s.ProjectID
+GROUP BY p.Title;
+--parallel mode
+ALTER TABLE mvb_delivery PARALLEL 4;
+ALTER TABLE mvb_product PARALLEL 4;
+-- Parallel query
+SET AUTOTRACE ON
+SELECT /*+ PARALLEL(e) PARALLEL(s) */
+       p.product_b, SUM(p.total amount), COUNT(p.productID)
+FROM Product p
+JOIN mvb_delivery d ON p.ProductID = e.ProductID
+JOIN mvb_product p ON p.ProductID = d.ProductID
+GROUP BY p.productName;
+--c. Distributed(Real Setup)
+
+--Access remote tables directly via DB links:
+
+
+SET AUTOTRACE ON
+SELECT /*+ DRIVING_SITE(e) USE_NL(e s) */
+       p.product, SUM(p.total amount), COUNT(d.productID)
+FROM Product p
+JOIN delivery_b@branch_b_link e ON p.productID = e.ProductID
+JOIN product_b@branch_b_link s ON p.productID = d.productID
+GROUP BY p.product;
+ 
